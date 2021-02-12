@@ -1,0 +1,159 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Hello World</title>
+  <style>* {padding: 0; margin: 0}</style>
+</head>
+  <script src="pixi.min.js"></script>
+  <script src="node_modules/chess.js/chess.js"></script>
+<body>
+  <script type="text/javascript">
+
+    function keyboard(value) {
+    let key = {};
+    key.value = value;
+    key.isDown = false;
+    key.isUp = true;
+    key.press = undefined;
+    key.release = undefined;
+    //The `downHandler`
+    key.downHandler = event => {
+        if (event.key === key.value) {
+        if (key.isUp && key.press) key.press();
+        key.isDown = true;
+        key.isUp = false;
+        event.preventDefault();
+        }
+    };
+
+    //The `upHandler`
+    key.upHandler = event => {
+        if (event.key === key.value) {
+        if (key.isDown && key.release) key.release();
+        key.isDown = false;
+        key.isUp = true;
+        event.preventDefault();
+        }
+    };
+
+    //Attach event listeners
+    const downListener = key.downHandler.bind(key);
+    const upListener = key.upHandler.bind(key);
+    
+    window.addEventListener(
+        "keydown", downListener, false
+    );
+    window.addEventListener(
+        "keyup", upListener, false
+    );
+    
+    // Detach event listeners
+    key.unsubscribe = () => {
+        window.removeEventListener("keydown", downListener);
+        window.removeEventListener("keyup", upListener);
+    };
+    
+    return key;
+    }
+
+    let state = play;
+
+    //Aliases
+    let Application = PIXI.Application,
+        loader = new PIXI.Loader(),
+        resources = loader.resources,
+        Sprite = PIXI.Sprite;
+
+    let type = "WebGL"
+    if(!PIXI.utils.isWebGLSupported()){
+      type = "canvas"
+    }
+
+    let texc = PIXI.utils.TextureCache
+
+
+    //Create a Pixi Application
+    let app = new PIXI.Application({width: 600, height: 600});
+    app.renderer.view.style.position = "absolute";
+    app.renderer.view.style.display = "block";
+    app.renderer.autoResize = true;
+    app.renderer.resize(window.innerWidth, window.innerHeight);
+
+    //Add the canvas that Pixi automatically created for you to the HTML document
+    document.body.appendChild(app.view);
+
+    const chess = new Chess();
+
+    let queen;
+
+    let left = keyboard("ArrowLeft"),
+        up = keyboard("ArrowUp"),
+        right = keyboard("ArrowRight"),
+        down = keyboard("ArrowDown");
+
+    left.press = ()=>{queen.vx = -5; queen.vy = 0;}
+    left.release = () => {
+        if(!right.isDown && queen.vy === 0){
+            queen.vx = 0; queen.vy = 0;
+        }
+    }
+    up.press = () => {queen.vy = -5; queen.vx = 0;}
+
+    loader.add(
+        "img/wQ.png"
+    )
+    .load(setup);
+
+    loader.onProgress.add(loadProgressHandler);
+
+    function loadProgressHandler(loader, resource) {
+
+        //Display the file `url` currently being loaded
+        console.log("loading: " + resource.url); 
+
+        //Display the percentage of files currently loaded
+        console.log("progress: " + loader.progress + "%"); 
+
+        //If you gave your files names as the first argument 
+        //of the `add` method, you can access them like this
+        //console.log("loading: " + resource.name);
+    }
+
+    function setup() {
+        queen = new PIXI.Sprite(
+            resources["img/wQ.png"].texture
+        );
+        queen.position.set(100, 200);
+        app.stage.addChild(queen);
+
+        //Start the game loop 
+        app.ticker.add(delta => gameLoop(delta));
+
+        
+    }
+
+    function gameLoop(delta){
+        state(delta);
+    }
+
+    function play(delta) {
+
+        //Call this `gameLoop` function on the next screen refresh
+        //(which happens 60 times per second)
+        // requestAnimationFrame(gameLoop);
+
+        //Move the cat
+        if(rightKey.isDown){
+            queen.x += 1;
+        }
+
+
+    }
+
+
+
+
+  </script>
+</body>
+</html>

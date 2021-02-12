@@ -1,0 +1,239 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Hello World</title>
+  <style>* {padding: 0; margin: 0}</style>
+</head>
+  <script src="pixi.min.js"></script>
+  <script src="tink.js"></script>
+  <script src="utils.js"></script>
+  <script src="node_modules/chess.js/chess.js"></script>
+<body>
+  <script type="text/javascript">
+
+    let gameSize = 700;
+
+    let state = play;
+
+    //Aliases
+    let Application = PIXI.Application,
+        loader = new PIXI.Loader(),
+        resources = loader.resources,
+        Sprite = PIXI.Sprite,
+        Container = PIXI.Container;
+        
+    var lightCol = 0xeed3ac;
+    var darkCol =  0xb38967;
+    var highlightCol_light = 0xede06f;
+    var highlightCol_dark = 0xceb244;
+    var checkmateHighlight_light = 0xed6a53;
+    var checkmateHighlight_dark = 0xd7543e;
+        
+
+
+    let type = "WebGL"
+    if(!PIXI.utils.isWebGLSupported()){
+      type = "canvas"
+    }
+
+    let TextureCache = PIXI.utils.TextureCache
+
+    //Create a Pixi Application
+    let app = new PIXI.Application({width: gameSize, height: gameSize});
+    app.renderer.view.style.position = "absolute";
+    app.renderer.view.style.display = "block";
+    app.renderer.backgroundColor = 0xff00ff;
+
+    let t = new Tink(PIXI, app.renderer.view);
+
+    //Add the canvas that Pixi automatically created for you to the HTML document
+    document.body.appendChild(app.view);
+
+    const chess = new Chess();
+
+    let gameScene, pauseScene;
+    let pointer;
+    let pieceContainer;
+    let highlightContainer;
+
+    loader.add(
+        "img/pieces.png"
+    )
+    .load(setup);
+
+    loader.onProgress.add(loadProgressHandler);
+
+    function loadProgressHandler(loader, resource) {
+
+        //Display the file `url` currently being loaded
+        console.log("loading: " + resource.url); 
+
+        //Display the percentage of files currently loaded
+        console.log("progress: " + loader.progress + "%"); 
+
+        //If you gave your files names as the first argument 
+        //of the `add` method, you can access them like this
+        //console.log("loading: " + resource.name);
+    }
+
+    function setup() {
+        gameScene = new Container();
+        app.stage.addChild(gameScene);
+
+        pauseScene = new Container();
+        app.stage.addChild(pauseScene);
+        
+        pauseScene.visible = false;
+
+
+        // Draw board
+        boardContainer = new PIXI.Container();
+        boardContainer.interactive = true;
+        
+        // boardContainer.on('pointermove',onDrag);
+        // boardContainer.on('pointerdown',onPointerDownOnBoard);
+        
+        pieceContainer = new PIXI.Container();
+        highlightContainer = new PIXI.Container();
+        textContainer = new PIXI.Container();
+
+        let size = gameSize/8;
+        let graphics = new PIXI.Graphics();
+        for	(let i = 0; i <8; i ++) {
+            for	(let j = 0; j < 8; j ++){
+                let col = ((i+j)%2===0)?lightCol:darkCol;
+                graphics.beginFill(col);
+                // draw a rectangle
+                graphics.drawRect(i*size, j*size, size, size);
+            }
+        }
+        boardContainer.addChild(graphics);
+	    boardContainer.addChild(highlightContainer);
+        app.stage.addChild(boardContainer);
+        boardContainer.addChild(highlightContainer);
+	    app.stage.addChild(pieceContainer);
+
+        // Pieces in order: King, Queen, Bishop, Knight, Rook, Pawn [White,Black]
+        pieceTextures = new Array(6);
+        for (let i = 0; i < 6; i ++){
+            pieceTextures[i] = new Array(2);
+        }
+
+        // Draw pieces
+        let spriteSize = 1000/6.0;
+
+        for (let i = 0; i <= 1; i ++) {
+            for (let j = 0; j < 6; j++) {
+
+                let rect = new PIXI.Rectangle(spriteSize*j,spriteSize*i,spriteSize,spriteSize);
+                let texture = new PIXI.Texture(TextureCache["img/pieces.png"],rect);
+                texture.frame = rect;
+                pieceTextures[j][i] = texture;
+            }
+        }
+
+        // init_board();
+
+        pointer = t.makePointer();
+
+        pointer.press = () => {
+            console.log("Pressed");
+        }
+        pointer.release = () => console.log("The pointer was released");
+        pointer.tap = () => console.log("The pointer was tapped");
+
+        
+        // let esc = keyboard("Escape");
+
+        // esc.press = () => {
+        //     if(state == play){
+        //         state = pause;
+        //     }else{
+        //         state = play;
+        //     }
+            
+        //     gameScene.visible = !gameScene.visible;
+        //     pauseScene.visible = !pauseScene.visible;
+            
+        // }
+
+        // t.makeDraggable(queen);
+        // t.arrowControl(queen, 5);
+
+
+        //Start the game loop 
+        app.ticker.add(delta => gameLoop(delta));
+
+        
+    }
+
+    function gameLoop(delta){
+        state(delta);
+
+        //Update Tink
+        t.update();
+    }
+
+    function play(delta) {
+
+       
+
+        // if (pointer.hitTestSprite(queen)) {
+  
+        //     if(pointer.isDown){
+        //         // pointer.cursor = "move";
+        //     }else{
+        //         //Display a hand icon while the pointer is over the sprite
+        //         // pointer.cursor = "move";
+        //     }
+        // }else{
+        //     pointer.cursor = "auto";
+        // }
+
+    }
+
+    function pause(delta){
+
+    }
+
+
+    function init_board(){
+
+        // var startFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        // let boardLayout = startFen.split(' ')[0];
+        // let rankLayouts = boardLayout.split('/');
+    
+        // for	(let rankIndex = 0; rankIndex < rankLayouts.length; rankIndex ++) {
+        //     let fileIndex = 0;
+        //     for (let j = 0; j < rankLayouts[rankIndex].length; j ++) {
+        //         let char = rankLayouts[rankIndex][j];
+        //         let num = parseFloat(char);
+        //         if (!isNaN(num) && isFinite(num)) {
+        //             fileIndex +=Number(parseFloat(char));
+        //         }
+        //         else {
+        //             let colourIndex = (char.toUpperCase() == char)?0:1; // 0 = white, 1 = black
+        //             let isWhite = colourIndex == 0;
+        //             let pieceIndex = pieceOrder.indexOf(char.toUpperCase());
+        //             let texture = pieceTextures[pieceIndex][colourIndex];
+        //             let sprite = new PIXI.Sprite(texture);
+        //             let pos = new Point(fileIndex*size+size*.5,rankIndex*size+size*.5);
+        //             let coord = squareCoordFromPoint(pos);
+                    
+        //             initPieceSprite(sprite, pos,size,isWhite);
+        //             fileIndex+=1;
+                    
+        //             if (char == 'k') {
+        //                 blackKingCoord = coord;
+        //             }
+        //         }
+
+        //     }
+        // }
+    }
+
+
+  </script>
+</body>
+</html>

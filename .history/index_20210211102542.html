@@ -1,0 +1,148 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Hello World</title>
+  <style>* {padding: 0; margin: 0}</style>
+</head>
+  <script src="pixi.min.js"></script>
+  <script src="tink.js"></script>
+  <script src="utils.js"></script>
+  <script src="node_modules/chess.js/chess.js"></script>
+  <script src="chessboard.js"></script>
+
+<body>
+  <script type="text/javascript">
+
+    
+    let state = play;
+
+    function clamp(v, min, max) {
+        return Math.min(Math.max(v,min),max);
+    }
+
+    function clamp01(v) {
+        return clamp(v,0,1);
+    }
+
+    function squareCoordFromPoint(p) {
+        let px = clamp01(p.x/(size*8));
+        let py = 1-clamp01(p.y/(size*8));
+
+        let x = clamp(Math.floor(px*8),0,7);
+        let y = clamp(Math.floor(py*8),0,7);
+
+        return new Point(x,y);
+    }
+
+    //Aliases
+    
+        
+    
+    var allSprites = new Array(64);
+
+    function indexFromCoord(coord) {
+        return coord.y*8 + coord.x;
+    }
+
+    
+    
+    const chess = new Chess();
+
+    let gameScene, pauseScene;
+    let pointer;
+    
+    
+    function initPieceSprite(sprite, point, size, isWhite){
+	
+        sprite.position.set(point.x, point.y);
+        sprite.width = size;
+        sprite.height = size;
+        sprite.anchor.set(.5);
+
+        if (isWhite || !blackPiecesInactive){
+            sprite.interactive = true;
+            sprite.buttonMode = true;
+
+            sprite.on('pointerdown', () => onPieceSelected(sprite));
+            sprite.on('pointerup', onPieceReleased);
+        }
+        pieceContainer.addChild(sprite);
+        
+        let squareIndex = indexFromCoord(squareCoordFromPoint(point));
+        allSprites[squareIndex] = sprite;
+    }
+
+    function setup() {
+        init_board();
+
+        pointer = t.makePointer();
+
+        pointer.press = () => {
+            console.log("Pressed");
+        }
+        pointer.release = () => console.log("The pointer was released");
+        pointer.tap = () => console.log("The pointer was tapped");
+
+        
+        // let esc = keyboard("Escape");
+
+        // esc.press = () => {
+        //     if(state == play){
+        //         state = pause;
+        //     }else{
+        //         state = play;
+        //     }
+            
+        //     gameScene.visible = !gameScene.visible;
+        //     pauseScene.visible = !pauseScene.visible;
+            
+        // }
+
+        // t.makeDraggable(queen);
+        // t.arrowControl(queen, 5);
+
+
+        //Start the game loop 
+        app.ticker.add(delta => gameLoop(delta));
+
+        
+    }
+
+    function gameLoop(delta){
+        state(delta);
+
+        //Update Tink
+        t.update();
+    }
+
+    function play(delta) {
+
+       
+
+        // if (pointer.hitTestSprite(queen)) {
+  
+        //     if(pointer.isDown){
+        //         // pointer.cursor = "move";
+        //     }else{
+        //         //Display a hand icon while the pointer is over the sprite
+        //         // pointer.cursor = "move";
+        //     }
+        // }else{
+        //     pointer.cursor = "auto";
+        // }
+
+    }
+
+    function pause(delta){
+
+    }
+
+
+    
+    
+
+
+  </script>
+</body>
+</html>

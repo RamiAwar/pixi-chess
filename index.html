@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Hello World</title>
+  <style>* {padding: 0; margin: 0}</style>
+</head>
+  <script src="pixi.min.js"></script>
+  <script src="tink.js"></script>
+  <script src="utils.js"></script>
+  <script src="node_modules/chess.js/chess.js"></script>
+  <script src="chessboard.js"></script>
+
+<body>
+  <script type="text/javascript">
+
+    
+    let state = play;
+
+    function clamp(v, min, max) {
+        return Math.min(Math.max(v,min),max);
+    }
+
+    function clamp01(v) {
+        return clamp(v,0,1);
+    }
+
+    function squareCoordFromPoint(p) {
+        let px = clamp01(p.x/(size*8));
+        let py = 1-clamp01(p.y/(size*8));
+
+        let x = clamp(Math.floor(px*8),0,7);
+        let y = clamp(Math.floor(py*8),0,7);
+
+        return new Point(x,y);
+    }
+
+    //Aliases
+    
+    function initPieceSprite(sprite, point, size, isWhite){
+	
+        
+
+        if (isWhite || !blackPiecesInactive){
+            sprite.interactive = true;
+            sprite.buttonMode = true;
+
+            sprite.on('pointerdown', () => onPieceSelected(sprite));
+            sprite.on('pointerup', onPieceReleased);
+        }
+        
+        
+        
+    }
+
+   
+
+    
+
+    function play(delta) {
+
+       
+
+        // if (pointer.hitTestSprite(queen)) {
+  
+        //     if(pointer.isDown){
+        //         // pointer.cursor = "move";
+        //     }else{
+        //         //Display a hand icon while the pointer is over the sprite
+        //         // pointer.cursor = "move";
+        //     }
+        // }else{
+        //     pointer.cursor = "auto";
+        // }
+
+    }
+
+    function pause(delta){
+
+    }
+
+
+    
+    
+
+
+  </script>
+</body>
+</html>
