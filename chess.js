@@ -1844,6 +1844,15 @@ var Chess = function(fen) {
       return perft(depth)
     },
 
+    check_promotion: function(pieceType, from, to){
+        from = SQUARES[from]
+        to = SQUARES[to]
+        clg(from)
+        clg(to)
+        clg(pieceType)
+        return (pieceType === PAWN && (rank(to) === RANK_8 || rank(to) === RANK_1))
+    },
+
     square_color: function(square) {
       if (square in SQUARES) {
         var sq_0x88 = SQUARES[square]

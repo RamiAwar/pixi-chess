@@ -1,53 +1,3 @@
-function keyboard(value) {
-    let key = {};
-
-    key.value = value;
-    key.isDown = false;
-    key.isUp = true;
-    key.press = undefined;
-    key.release = undefined;
-
-    //The `downHandler`
-    key.downHandler = event => {
-        if (event.key === key.value) {
-        if (key.isUp && key.press) key.press();
-        key.isDown = true;
-        key.isUp = false;
-        event.preventDefault();
-        }
-    };
-
-    //The `upHandler`
-    key.upHandler = event => {
-        if (event.key === key.value) {
-        if (key.isDown && key.release) key.release();
-        key.isDown = false;
-        key.isUp = true;
-        event.preventDefault();
-        }
-    };
-
-    //Attach event listeners
-    const downListener = key.downHandler.bind(key);
-    const upListener = key.upHandler.bind(key);
-    
-    window.addEventListener(
-        "keydown", downListener, false
-    );
-    window.addEventListener(
-        "keyup", upListener, false
-    );
-    
-    // Detach event listeners
-    key.unsubscribe = () => {
-        window.removeEventListener("keydown", downListener);
-        window.removeEventListener("keyup", upListener);
-    };
-    
-    return key;
-}
-
-
 function drawBoard(boardSize, squareSize){
     let graphics = new PIXI.Graphics();
 
@@ -97,8 +47,19 @@ function positionToCoord(i, j, squareSize){
     return new Point(i * squareSize + squareSize * 0.5, j * squareSize + squareSize * 0.5)
 }
 
-function highlightSquare(squareName, squareSize, highlightContainer) {
+function highlightSquare(squareName, squareSize, highlightContainer, pieceContainer) {
+    
+    // Check if piece is on square
     let position = chess_controller.squareToPosition(squareName);
+    for(let i = 0; i < pieceContainer.children.length; i++){
+        
+    }
+
+    // If so, draw boundary only
+    
+
+    // Otherwise, draw circle in the middle
+    
 	let circle = new PIXI.Graphics();
 	let col = ((position.x + ( position.y)) % 2 == 0) ? HIGHLIGHT_LIGHT : HIGHLIGHT_DARK;
 	circle.beginFill(col);
@@ -109,14 +70,17 @@ function highlightSquare(squareName, squareSize, highlightContainer) {
     let square = new PIXI.Graphics();
     square.beginFill(col);
 	square.drawRect(position.x * squareSize, ( position.y) * squareSize, squareSize, squareSize);
-    square.interactive = true;
+    
     square.renderable = false;
-    square.mouseover = () => {
+    square.interactive = true;
+    
+    square.on("pointerover", () => {
         square.renderable = true;
-    }
-    square.mouseout = () => {
+    })
+    square.on("pointerout", () => {
         square.renderable = false;
-    }
+    });
+
     highlightContainer.addChild(square);
 }
 
@@ -129,6 +93,7 @@ function selectHighlightPosition(position, squareSize, highlightContainer){
 }
 
 function clearHighlights(){
+    h.removeAllSprites()
     for(let i = highlightContainer.children.length-1; i >= 0; i--){
         highlightContainer.children[i].destroy();
     }

@@ -278,13 +278,16 @@ class Tink {
 
           //Call the `tap` method if it's been assigned
           if (this.tap) this.tap();
+
+          this.isUp = true;
+          this.isDown = false;
+        }else{
+            this.isUp = true;
+            this.isDown = false;
+
+            //Call the `release` method if it's been assigned
+            if (this.release) this.release();
         }
-        this.isUp = true;
-        this.isDown = false;
-
-        //Call the `release` method if it's been assigned
-        if (this.release) this.release();
-
         //`event.preventDefault();` needs to be disabled to prevent <input> range sliders
         //from getting trapped in Firefox (and possibly Safari)
         //event.preventDefault();
@@ -369,17 +372,21 @@ class Tink {
     //Bind the events to the handlers
     //Mouse events
     element.addEventListener(
-      "mousemove", pointer.moveHandler.bind(pointer), false
+      "pointermove", pointer.moveHandler.bind(pointer), false
     );
     element.addEventListener(
-      "mousedown", pointer.downHandler.bind(pointer), false
+      "pointerdown", pointer.downHandler.bind(pointer), false
     );
 
     //Add the `mouseup` event to the `window` to
     //catch a mouse button release outside of the canvas area
     window.addEventListener(
-      "mouseup", pointer.upHandler.bind(pointer), false
+      "pointerup", pointer.upHandler.bind(pointer), false
     );
+
+    // window.addEventListener(
+    //     "pointertap", pointer.tapHandler.bind(pointer), false
+    // )
 
     //Touch events
     element.addEventListener(
@@ -461,6 +468,9 @@ class Tink {
 
             //Get a reference to the current sprite
             let sprite = draggableSprites[i];
+            if(!sprite) {
+                continue;
+            }
 
             //Check for a collision with the pointer using `hitTestSprite`
             if (pointer.hitTestSprite(sprite) && sprite.draggable) {
@@ -523,6 +533,10 @@ class Tink {
 
   makeInteractive(o) {
 
+    o.interactive = true;
+    // Shows hand cursor
+    o.buttonMode = true;
+
     //The `press`,`release`, `over`, `out` and `tap` methods. They're `undefined`
     //for now, but they can be defined in the game program
     o.press = o.press || undefined;
@@ -562,6 +576,29 @@ class Tink {
     this.buttons.push(o);
   }
 
+  removeSprite(squareName){
+      for(let i = 0; i < this.buttons.length; i++){
+          if(this.buttons[i] != null && this.buttons[i].squareName === squareName){
+                if (i > -1) {
+                    delete this.buttons[i];
+                    this.buttons.splice(i, 1);
+                }
+          }
+      }
+      for(let i = 0; i < this.draggableSprites.length; i++){
+          if(this.draggableSprites[i] != null && this.draggableSprites[i].squareName === squareName){
+              if (i > -1) {
+                    delete this.draggableSprites[i];
+                    this.draggableSprites.splice(i, 1);
+                }
+          }
+      }
+  }
+
+  removeAllSprites(){
+      this.buttons = []
+      this.draggableSprites = []
+  }
   //The `updateButtons` method will be called each frame 
   //inside the game loop. It updates all the button-like sprites
   updateButtons() {
@@ -577,14 +614,12 @@ class Tink {
 
       pointer.shouldBeHand = false;
 
-
-
       //Loop through all the button-like sprites that were created
       //using the `makeInteractive` method
       this.buttons.forEach(o => {
-
+        
         //Only do this if the interactive object is enabled
-        if (o.enabled) {
+        if (o != null && o.enabled) {
 
           //Figure out if the pointer is touching the sprite
           let hit = pointer.hitTestSprite(o);
@@ -708,7 +743,7 @@ class Tink {
   }
 
   //A function that creates a sprite with 3 frames that
-  //represent the button states: up, over and down
+  //represent the button states  up, over and down
   button(source, x = 0, y = 0) {
 
     //The sprite object that will be returned
