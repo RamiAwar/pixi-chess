@@ -119,15 +119,7 @@ function onClick(){
         if(move === null){
             activeSprite = null;
         }else{
-            activeSprite.rank = 7 - closest_square.y;
-            activeSprite.file = closest_square.x;
-
-            // Set new position
-            activeSprite.position.set(
-                coords.x,
-                coords.y
-            );
-
+            makeMove(activeSprite, move)
             activeSprite = null;
         }
     }
@@ -148,6 +140,26 @@ function setupPieces(chess_controller, squareSize, pieceContainer, pieceTextures
     }
 }
 
+
+function selectSprite(sprite){
+    sprite.isDragged = true;
+    activeSprite = sprite;
+    isDragging = true;
+
+    clearHighlights();
+    selectHighlightPosition({x: sprite.file, y: sprite.rank}, squareSize, highlightContainer);
+
+    // Get all possible moves for this piece
+    valid_moves = chess_controller.moves({verbose: true, square: FILES[sprite.file] + RANKS[sprite.rank]})
+
+    // Valid move highlighting
+    // Add square highlights to board highlights
+    for(let i = 0; i < valid_moves.length; i++){
+        squareName = sprite.piece == 'p' ? valid_moves[i].to : valid_moves[i].to.slice(-2);
+        // TODO: DO NOT highlight if another piece present here!
+        highlightSquare(squareName, squareSize, highlightContainer);
+    }
+}
 
 function createPieceSprite(chess_controller, piece, rank, file, squareSize, pieceContainer, pieceTextures, highlightContainer){
     let pieceIndex = PIECE_ORDER.indexOf(piece.type);
@@ -172,31 +184,24 @@ function createPieceSprite(chess_controller, piece, rank, file, squareSize, piec
     
     // Add tink
     t.makeInteractive(sprite);
-    t.makeDraggable(sprite);
+    // t.makeDraggable(sprite);
 
     sprite.press = () => {
         
+        // Check turn
+        if((chess_controller.turn() == 'w' && sprite.isBlack) || (chess_controller.turn() == 'b' && !sprite.isBlack)){
+            return;
+        }
+
         // Only set as dragged if this is the currently dragged sprite
-        if(pointer.dragSprite === sprite && activeSprite === null){
-            sprite.isDragged = true;
-            activeSprite = sprite;
-            isDragging = true;
-
-            clearHighlights();
-            selectHighlightPosition({x: sprite.file, y: sprite.rank}, squareSize, highlightContainer);
-
-            // Get all possible moves for this piece
-            valid_moves = chess_controller.moves({square: FILES[sprite.file] + RANKS[sprite.rank]})
-            // Valid move highlighting
-            // Add square highlights to board highlights
-            for(let i = 0; i < valid_moves.length; i++){
-                squareName = sprite.piece == 'p' ? valid_moves[i] : valid_moves[i].slice(-2);
-                // TODO: DO NOT highlight if another piece present here!
-                highlightSquare(squareName, squareSize, highlightContainer);
-            }
+        if(activeSprite === null){
+            clg("select new piece cause active null")
+            selectSprite(sprite);
         }else{
-            if(pointer.dragSprite === sprite){
-                
+            if(activeSprite.isBlack === sprite.isBlack){
+                // Same color, change selection
+                clg("select piece cause same color")
+                selectSprite(sprite);
             }
         }
     };
@@ -212,6 +217,8 @@ function createPieceSprite(chess_controller, piece, rank, file, squareSize, piec
 
             // Find closest square
             closest_square = findClosestSquare(sprite.position);
+            if(sprite.rank == 7 - closest_square.y && sprite.file == closest_square.x) return;
+
             coords = positionToCoord(closest_square.x, closest_square.y, squareSize);
 
             // -------- Check if valid move --------
@@ -238,19 +245,45 @@ function createPieceSprite(chess_controller, piece, rank, file, squareSize, piec
                 // Return to previous position
                 coords = positionToCoord(sprite.file, 7 - sprite.rank, squareSize);
                 sprite.position.set(coords.x, coords.y);
+                activeSprite = null;
             }else{
                 clearHighlights();
                 activeSprite = null;
 
-                sprite.rank = 7 - closest_square.y;
-                sprite.file = closest_square.x;
-
-                // Set new position
-                sprite.position.set(
-                    coords.x,
-                    coords.y
-                );
+                makeMove(sprite, move)
             }
         }
     };
+}
+
+function makeMove(sprite, move){
+    // Handle capture
+    if(move.flags == 'e' || move.flags == 'c'){
+        // Remove captured piece
+        for(let childIndex = 0; childIndex < pieceContainer.children.length; childIndex++){
+            clg("Comparing " + pieceContainer.children[childIndex].squareName + " to " + move.to)
+            captured_piece = pieceContainer.children[childIndex]
+            if(captured_piece.squareName === move.to){
+                clg("capture")
+                pieceContainer.removeChild(captured_piece);
+                captured_piece.press = null
+                captured_piece.release = null
+            }
+        }
+    }
+
+    // TODO: Handle castling
+
+    // TODO: Handle promotion
+
+
+    sprite.rank = 7 - closest_square.y;
+    sprite.file = closest_square.x;
+    sprite.squareName = FILES[sprite.file] + RANKS[sprite.rank]
+
+    // Set new position
+    sprite.position.set(
+        coords.x,
+        coords.y
+    );
 }
