@@ -208,7 +208,6 @@ function selectSprite(sprite){
     // Add square highlights to board highlights
     for(let i = 0; i < valid_moves.length; i++){
         squareName = sprite.piece == 'p' ? valid_moves[i].to : valid_moves[i].to.slice(-2);
-        // TODO: DO NOT highlight if another piece present here!
         highlightSquare(squareName, squareSize, highlightContainer, pieceContainer);
     }
 }
@@ -375,7 +374,7 @@ function makeMove(sprite, move, closest_square, coords){
         let file = 'a'
         if(move.flags.includes('k')) file = 'h';
 
-        let rook = getPieceFromPosition(file + rank, pieceContainer)
+        let rook = getPieceAt(file + rank, pieceContainer)
 
     }else{
         if(!soundPlayed) {

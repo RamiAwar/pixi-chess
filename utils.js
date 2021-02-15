@@ -32,10 +32,10 @@ function loadPieceTextures(){
             pieceTextures[j][i] = texture;
         }
     }
-    let rect = new PIXI.Rectangle(0, 0, 480, 480)
-    let tex = new PIXI.Texture(TextureCache["img/rook.png"], rect);
-    tex.frame = rect
-    pieceTextures[4][0] = tex
+    // let rect = new PIXI.Rectangle(0, 0, 480, 480)
+    // let tex = new PIXI.Texture(TextureCache["img/rook.png"], rect);
+    // tex.frame = rect
+    // pieceTextures[4][0] = tex
 
     return pieceTextures;
 }
@@ -52,7 +52,7 @@ function positionToCoord(i, j, squareSize){
     return new Point(i * squareSize + squareSize * 0.5, j * squareSize + squareSize * 0.5)
 }
 
-function getPieceFromPosition(squareName, pieceContainer){
+function getPieceAt(squareName, pieceContainer){
     for(let childIndex = 0; childIndex < pieceContainer.children.length; childIndex++){
         if(pieceContainer.children[childIndex].squareName === squareName){
             return pieceContainer.children[childIndex];
@@ -88,12 +88,8 @@ function highlightSquare(squareName, squareSize, highlightContainer, pieceContai
     let color = ((position.x + ( position.y)) % 2 == 0) ? HIGHLIGHT_LIGHT : HIGHLIGHT_DARK;
 
     // Check if square has a piece (if so draw boundary only)
-    for(let i = 0; i < pieceContainer.children.length; i++){
-        if(pieceContainer.children[i].squareName === squareName){
-            piece = pieceContainer.children[i];
-            break;
-        }
-    }
+    piece = getPieceAt(squareName, pieceContainer)
+
     // If so, draw boundary only
     if(piece != null){
         let boundaries = new PIXI.Graphics();
