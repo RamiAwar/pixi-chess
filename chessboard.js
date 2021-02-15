@@ -9,8 +9,23 @@ let Application = PIXI.Application,
     Point = PIXI.Point,
     TextureCache = PIXI.utils.TextureCache,
     Container = PIXI.Container,
+    Sound = PIXI.sound,
     clg = console.log;
 
+// List of files to load
+const manifest = {
+    move: 'audio/move.mp3',
+    capture: 'audio/capture.mp3',
+    castle: 'audio/castle.mp3',
+    check: 'audio/check.mp3',
+    pieces: 'img/pieces.png',
+    rook: 'img/rook.png'
+};
+
+// Add to the PIXI loader
+for (let name in manifest) {
+    loader.add(name, manifest[name]);
+}
 
 // Properties
 const LIGHT = 0xeed3ac;
@@ -23,6 +38,7 @@ const CHECKMATE_DARK = 0xd7543e;
 const PIECE_ORDER = "kqbnrp";
 const FILES = "abcdefgh";
 const RANKS = "12345678";
+const blurFilter = new PIXI.filters.BlurFilter(strength=10, quality=8);
 
 // Setup PIXI, Tink
 let type = "WebGL"
@@ -38,8 +54,6 @@ app.renderer.backgroundColor = 0xff00ff;
 let chess_controller = new Chess();
 let pieceSprites = [], activeSprite = null, isDragging = false;
 let t = new Tink(PIXI, app.renderer.view);
-let h = new Tink(PIXI, app.renderer.view);
-let hointer = h.makePointer();
 let pointer = t.makePointer();
 
 window.onload=function()
@@ -49,14 +63,11 @@ window.onload=function()
 }
 
 // Define containers
-let boardContainer, pieceContainer, highlightContainer;
-
+let boardContainer, pieceContainer, highlightContainer, checkHighlightContainer;
 
 // Load assets
-loader.add(
-    "img/pieces.png"
-)
-.load(setup);
+loader.load(setup);
+
 loader.onProgress.add(()=>{console.log("Loading: " + loader.progress + "%"); });
 
 function setup(){
@@ -64,10 +75,12 @@ function setup(){
     pieceContainer = new PIXI.Container();
     // Highlights under pieces, child of board
     highlightContainer = new PIXI.Container();
+    checkHighlightContainer = new PIXI.Container();
 
-    graphics = drawBoard(boardSize, squareSize);
-    boardContainer.addChild(graphics);
+    board = drawBoard(boardSize, squareSize);
+    boardContainer.addChild(board);
 	boardContainer.addChild(highlightContainer);
+    boardContainer.addChild(checkHighlightContainer);
 
     // Add board to app
     app.stage.addChild(boardContainer);
@@ -80,9 +93,6 @@ function setup(){
     app.stage.addChild(pieceContainer);
 
     highlightContainer.interactive = true;
-    highlightContainer.on('pointerover', ()=>{
-        clg('test')
-    })
 
     pointer.tap = () => onTap();
 
@@ -93,7 +103,6 @@ function setup(){
 function gameLoop(delta){
     //Update Tink
     t.update();
-    h.update();
 }
 
 function onTap(){
@@ -149,7 +158,7 @@ function onTap(){
         
         // TODO: Handle promotion
         if (chess_controller.check_promotion(activeSprite.piece, fromSquareName, toSquareName)){
-            clg("promotion")
+
         }
 
         description = {
@@ -163,10 +172,8 @@ function onTap(){
 
         if(move === null){
             activeSprite = null;
-            clg("tap null move")
         }else{
-            clg("tap make move")
-            makeMove(activeSprite, move, closest_square)
+            makeMove(activeSprite, move, closest_square, coords)
             activeSprite = null;
         }
     }
@@ -202,7 +209,7 @@ function selectSprite(sprite){
     for(let i = 0; i < valid_moves.length; i++){
         squareName = sprite.piece == 'p' ? valid_moves[i].to : valid_moves[i].to.slice(-2);
         // TODO: DO NOT highlight if another piece present here!
-        highlightSquare(squareName, squareSize, highlightContainer);
+        highlightSquare(squareName, squareSize, highlightContainer, pieceContainer);
     }
 }
 
@@ -215,6 +222,7 @@ function createPieceSprite(chess_controller, piece, rank, file, squareSize, piec
     let point = positionToCoord(file, rank, squareSize);
     
     sprite.isBlack = isBlack; // Save state inside sprite
+    sprite.color = piece.color;
     sprite.piece = piece.type;
     sprite.rank = 7 - rank;
     sprite.file = file;
@@ -231,6 +239,8 @@ function createPieceSprite(chess_controller, piece, rank, file, squareSize, piec
     t.makeInteractive(sprite);
     t.makeDraggable(sprite);
     sprite.draggable = false;
+    // Stop interactivity to allow events to pass through sprite
+    sprite.interactive = false;
 
 
     // Upon clicking a sprite, 
@@ -258,8 +268,6 @@ function createPieceSprite(chess_controller, piece, rank, file, squareSize, piec
             isDragging = true;
             sprite.isDragged = true;
             sprite.draggable = true;
-            // Stop interactivity to allow events to pass through sprite
-            sprite.interactive = false;
 
             selectSprite(sprite);
         }
@@ -304,7 +312,6 @@ function createPieceSprite(chess_controller, piece, rank, file, squareSize, piec
 
             // TODO: Handle promotion
             if (chess_controller.check_promotion(sprite.piece, fromSquareName, toSquareName)){
-                clg("promotion")
             }
 
             description = {
@@ -315,39 +322,67 @@ function createPieceSprite(chess_controller, piece, rank, file, squareSize, piec
             move = chess_controller.move(description);
 
             if(move === null){
-                clg("release null move")
                 // Return to previous position
                 coords = positionToCoord(sprite.file, 7 - sprite.rank, squareSize);
                 sprite.position.set(coords.x, coords.y);
                 activeSprite = null;
             }else{
-                clg("release make move")
                 activeSprite = null;
-                makeMove(sprite, move, closest_square)
+                makeMove(sprite, move, closest_square, coords)
             }
         }
     };
 }
 
-function makeMove(sprite, move, closest_square){
+function makeMove(sprite, move, closest_square, coords){
+    // Clear check highlights since valid move
+    clearCheckHighlights();
+    let soundPlayed = false;
 
-    clg(move)
+    // Check if in check
+    if(chess_controller.in_check()){
+        if(!soundPlayed){
+            Sound.play("check");
+            soundPlayed = true;
+        }
+
+        let king = getPiece('k', chess_controller.turn(), pieceContainer);
+        highlightKing(king);
+    }
 
     // Handle capture
-    if(move.flags == 'e' || move.flags == 'c'){
+    if(move.flags.includes('e') || move.flags.includes('c')){
+        if(!soundPlayed) Sound.play("capture");
         // Remove captured piece
         for(let childIndex = 0; childIndex < pieceContainer.children.length; childIndex++){
             captured_piece = pieceContainer.children[childIndex]
             if(captured_piece.squareName === move.to){
-                clg("capture")
                 pieceContainer.removeChild(captured_piece);
-                t.removeSprite(captured_piece.squareName)
-                captured_piece.destroy()
+                t.removeSprite(captured_piece.squareName);
+                captured_piece.destroy();
+                break;
             }
         }
-    }
+    }else if(move.flags.includes('q') || move.flags.includes('k')){
+        // Handle castling
+        if(!soundPlayed) {
+            Sound.play("castle");
+            soundPlayed = true;
+        }
 
-    // TODO: Handle castling
+        let rank = '1'
+        if(chess_controller.turn() == 'b') rank = '8';
+        let file = 'a'
+        if(move.flags.includes('k')) file = 'h';
+
+        let rook = getPieceFromPosition(file + rank, pieceContainer)
+
+    }else{
+        if(!soundPlayed) {
+            Sound.play("move");
+            soundPlayed = true;
+        }
+    }
 
     // Update sprite position
     sprite.rank = 7 - closest_square.y;

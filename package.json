@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "chess.js": "^0.11.0"
+    "chess.js": "^0.11.0",
+    "pixi-sound": "^3.0.5"
   }
 }
