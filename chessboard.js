@@ -370,11 +370,20 @@ function makeMove(sprite, move, closest_square, coords){
         }
 
         let rank = '1'
-        if(chess_controller.turn() == 'b') rank = '8';
+        // Take previous turn as move has been made
+        if(chess_controller.turn() == 'a') rank = '8';
+        
         let file = 'a'
         if(move.flags.includes('k')) file = 'h';
 
-        let rook = getPieceAt(file + rank, pieceContainer)
+        let rook = getPieceAt(file + rank, pieceContainer);
+        if(move.flags.includes('q')){
+            placePiece(rook, 'd' + rank)
+        }else if(move.flags.includes('k')){
+            placePiece(rook, 'f' + rank)
+        }else{
+            console.log("Castling error: Undefined castling side")
+        }
 
     }else{
         if(!soundPlayed) {

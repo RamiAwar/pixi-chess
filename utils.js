@@ -73,12 +73,12 @@ function getPiece(piece, color, pieceContainer){
 
 function placePiece(sprite, squareName){
     let position = chess_controller.squareToPosition(squareName)
-    let coords = positionToCoord(sprite.file, sprite.rank, squareSize);
+    let coords = positionToCoord(position.x, position.y, squareSize);
+
     sprite.file = position.x
     sprite.rank = 7 - position.y
     sprite.squareName = FILES[sprite.file] + RANKS[sprite.rank]
     sprite.position.set(coords.x, coords.y)
-
 }
 
 function highlightSquare(squareName, squareSize, highlightContainer, pieceContainer) {
