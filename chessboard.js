@@ -46,18 +46,21 @@ if(!PIXI.utils.isWebGLSupported()){
     type = "canvas"
 }
 
-let app = new PIXI.Application({width: boardSize, height: boardSize, autoDensity: true, antialias: true, resolution: 2});
-app.renderer.view.style.position = "absolute";
-app.renderer.view.style.display = "block";
-app.renderer.backgroundColor = 0xff00ff;
-
-let chess_controller = new Chess();
+let app, chess_controller, t, pointer;
 let pieceSprites = [], activeSprite = null, isDragging = false;
-let t = new Tink(PIXI, app.renderer.view);
-let pointer = t.makePointer();
 
 window.onload=function()
 {
+    app = new PIXI.Application({width: boardSize, height: boardSize, autoDensity: true, antialias: true, resolution: 2});
+    app.renderer.view.style.position = "absolute";
+    app.renderer.view.style.display = "block";
+    app.renderer.backgroundColor = 0xff00ff;
+
+    chess_controller = new Chess();
+    
+    t = new Tink(PIXI, app.renderer.view);
+    pointer = t.makePointer();
+
     //Add the canvas that Pixi automatically created to the HTML document
     document.body.appendChild(app.view);
 }
